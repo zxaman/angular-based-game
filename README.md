@@ -13,7 +13,7 @@ Open the URL printed by the development server. The game requires a desktop brow
 
 - **WASD:** move
 - **Mouse:** look and aim
-- **Left click:** fire
+- **Hold left click:** automatic fire
 - **R:** reload (unlimited reserve ammunition)
 - **Shift:** sprint
 - **Space:** jump over or onto low obstacles (tall obstacles remain solid)
@@ -23,7 +23,9 @@ Run `npm run build` for a production build.
 
 ## World and NPCs
 
-The current game is a bounded survival sector, not a full open world. It includes procedurally textured streets, abandoned cars, barricades, streetlights, puddles and rubble. Infected have articulated walk cycles and steer around nearby obstacles; cover can block shots. The HUD shows the number of active hostiles and confirms hits.
+The current game is an original, bounded coastal-market arena inspired by the broad three-lane idea of VALORANT Drift; it is not an exact recreation of the map. Market stalls, buildings, docks and palm trees provide landmarks and cover. Infected are procedural stylized characters, with articulated walk cycles and basic obstacle steering. Cover blocks shots. You can steer in the air with WASD.
+
+You start with three lives and a shield; damage depletes the shield before health. When a life is lost, you redeploy with full health and shield and active enemies are cleared. Every five zombie kills fills your ult charge and pauses the game for a choice: increase weapon damage, increase and restore shield, or restore health and gain a life (up to three). Upgrades last until the run ends.
 
 Possible next steps for a more realistic game:
 
