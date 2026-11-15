@@ -37,31 +37,54 @@ export function addStreetDetails(scene: THREE.Scene, obstacles: {x:number,z:numb
   for (const z of [-24,0,24]) {box(.15,5,.15,0x323a34,7.8,2.5,z);box(1.5,.12,.12,0x323a34,7.1,4.9,z);const lamp=new THREE.PointLight(0xe5b978,15,12,2);lamp.position.set(6.4,4.7,z);scene.add(lamp);const glow=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:0xffd792}));glow.position.copy(lamp.position);scene.add(glow);}
 }
 
+// Shared, generated materials keep multiple animated zombies light enough for the browser.
+let zombieMaterials: {skin:THREE.MeshStandardMaterial; jacket:THREE.MeshStandardMaterial; jeans:THREE.MeshStandardMaterial; dark:THREE.MeshStandardMaterial; wound:THREE.MeshStandardMaterial; pack:THREE.MeshStandardMaterial; bone:THREE.MeshStandardMaterial}|undefined;
+function getZombieMaterials() {
+  if (zombieMaterials) return zombieMaterials;
+  const worn=(base:string, fleck:string, seed:number)=>new THREE.MeshStandardMaterial({map:texture(base,fleck,seed,[1,1]),roughness:1});
+  zombieMaterials={skin:worn('#a4a59a','#403e37',70),jacket:worn('#444945','#b4b2a2',71),jeans:worn('#53636a','#b6bac0',72),dark:new THREE.MeshStandardMaterial({color:0x252821,roughness:1}),wound:new THREE.MeshStandardMaterial({color:0x552a27,roughness:1}),pack:worn('#5b5b4b','#c4b7a1',73),bone:new THREE.MeshStandardMaterial({color:0xbab5a4,roughness:1})};
+  return zombieMaterials;
+}
 export function makeZombie(): {group: THREE.Group; limbs: THREE.Group[]} {
-  const group=new THREE.Group();
-  const shirts=[0x4e5c4d,0x68574d,0x52605b,0x5b5750];const shirt=shirts[Math.floor(Math.random()*shirts.length)];
-  const skin=new THREE.MeshStandardMaterial({color:0x879078,roughness:1});const clothes=new THREE.MeshStandardMaterial({color:shirt,roughness:1});const pants=new THREE.MeshStandardMaterial({color:0x343c38,roughness:1});const dark=new THREE.MeshStandardMaterial({color:0x282c27,roughness:1});
-  const mesh=(geometry:THREE.BufferGeometry, material:THREE.Material, parent:THREE.Object3D,x:number,y:number,z:number)=>{let m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;parent.add(m);return m;};
-  mesh(new THREE.CylinderGeometry(.29,.23,.72,8),clothes,group,0,1.22,0);
-  const head=mesh(new THREE.SphereGeometry(.25,10,8),skin,group,0,1.83,0);head.scale.set(.85,1.15,.86);
-  mesh(new THREE.BoxGeometry(.35,.14,.34),dark,group,0,1.98,-.04);
-  const eyes=new THREE.MeshStandardMaterial({color:0xa4432c,emissive:0x6b2010,emissiveIntensity:.7});for(const x of [-.095,.095])mesh(new THREE.SphereGeometry(.035,6,4),eyes,group,x,1.85,.205);
-  // Facial volume, sunken eyes, exposed teeth and uneven skin marks.
-  const nose=mesh(new THREE.SphereGeometry(.065,8,6),skin,group,0,1.77,.22);nose.scale.set(.7,1.1,.8);
-  mesh(new THREE.BoxGeometry(.15,.045,.025),dark,group,0,1.69,.205);
-  const teeth=new THREE.MeshStandardMaterial({color:0xb9b3a0,roughness:1});
-  for(let i=-2;i<=2;i++) mesh(new THREE.BoxGeometry(.022,.025,.01),teeth,group,i*.026,1.695,.22);
-  const wound=new THREE.MeshStandardMaterial({color:0x68392f,roughness:1});
-  const gash=mesh(new THREE.BoxGeometry(.12,.025,.015),wound,group,-.1,1.91,.19);gash.rotation.z=.35;
-  const neck=mesh(new THREE.CylinderGeometry(.12,.15,.18,9),skin,group,0,1.56,0);neck.rotation.z=.08;
-  mesh(new THREE.BoxGeometry(.12,.18,.03),wound,group,-.09,1.36,.285);
-  mesh(new THREE.BoxGeometry(.08,.12,.03),skin,group,.12,1.07,.25);
-
+  const group=new THREE.Group(), m=getZombieMaterials();
+  const mesh=(geometry:THREE.BufferGeometry, material:THREE.Material, parent:THREE.Object3D,x:number,y:number,z:number)=>{const part=new THREE.Mesh(geometry,material);part.position.set(x,y,z);part.castShadow=true;parent.add(part);return part;};
+  const ellipsoid=(parent:THREE.Object3D,mat:THREE.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const part=mesh(new THREE.SphereGeometry(1,12,10),mat,parent,x,y,z);part.scale.set(sx,sy,sz);return part;};
+  const piece=(parent:THREE.Object3D,mat:THREE.Material,x:number,y:number,z:number,w:number,h:number,d:number)=>mesh(new THREE.BoxGeometry(w,h,d),mat,parent,x,y,z);
+  // Hunched torso, open jacket and an olive backpack, matching the reference silhouette.
+  const torso=mesh(new THREE.CylinderGeometry(.31,.24,.72,10),m.jacket,group,0,1.23,0);torso.scale.z=.7;
+  piece(group,m.wound,0,1.25,.222,.22,.58,.03);
+  for(const side of [-1,1]){
+    const flap=piece(group,m.jacket,side*.17,1.24,.23,.18,.67,.05);flap.rotation.z=side*.06;
+    const lapel=piece(group,m.pack,side*.12,1.48,.25,.045,.25,.025);lapel.rotation.z=-side*.3;
+    const strap=piece(group,m.pack,side*.22,1.34,.251,.055,.58,.035);strap.rotation.z=side*.08;
+  }
+  const backpack=piece(group,m.pack,0,1.3,-.28,.44,.62,.22);backpack.rotation.x=-.08;
+  piece(group,m.dark,0,1.33,-.4,.4,.035,.02);
+  const neck=mesh(new THREE.CylinderGeometry(.11,.13,.18,10),m.skin,group,0,1.63,.015);neck.rotation.z=.08;
+  const head=ellipsoid(group,m.skin,0,1.86,.03,.22,.27,.205);head.rotation.z=.08;
+  ellipsoid(group,m.skin,0,1.72,.1,.17,.13,.16);
+  // Eye sockets, clouded eyes, nose, open mouth and teeth.
+  for(const side of [-1,1]){ellipsoid(group,m.dark,side*.09,1.88,.21,.07,.045,.025);ellipsoid(group,m.bone,side*.09,1.88,.232,.025,.018,.012);ellipsoid(group,m.skin,side*.225,1.84,.025,.045,.07,.035);}
+  ellipsoid(group,m.skin,0,1.81,.23,.045,.07,.055);ellipsoid(group,m.dark,0,1.71,.231,.10,.055,.022);
+  for(let i=-2;i<=2;i++)piece(group,m.bone,i*.032,1.725,.254,.023,.022,.012);
+  const cut=piece(group,m.wound,-.11,1.97,.183,.13,.028,.012);cut.rotation.z=.35;
   const limbs:THREE.Group[]=[];
-  for(const side of [-1,1]) {const arm=new THREE.Group();arm.position.set(side*.32,1.5,0);group.add(arm);mesh(new THREE.CylinderGeometry(.11,.09,.52,7),clothes,arm,0,-.26,0);mesh(new THREE.SphereGeometry(.1,7,6),skin,arm,0,-.55,0);for(let f=-1;f<=1;f++)mesh(new THREE.CylinderGeometry(.018,.013,.13,5),skin,arm,f*.05,-.64,.04);limbs.push(arm);}
-  for(const side of [-1,1]) {const leg=new THREE.Group();leg.position.set(side*.15,.88,0);group.add(leg);mesh(new THREE.CylinderGeometry(.13,.1,.72,7),pants,leg,0,-.36,0);mesh(new THREE.BoxGeometry(.23,.12,.32),dark,leg,0,-.72,.06);limbs.push(leg);}
-  // Stains and torn clothing make each silhouette read as infected.
-  mesh(new THREE.BoxGeometry(.14,.24,.015),new THREE.MeshStandardMaterial({color:0x57342c}),group,.09,1.25,.272);
+  for(const side of [-1,1]){
+    const arm=new THREE.Group();arm.position.set(side*.34,1.52,0);group.add(arm);arm.rotation.z=side*.12;
+    const sleeve=mesh(new THREE.CylinderGeometry(.13,.1,.36,9),m.jacket,arm,0,-.18,0);sleeve.rotation.z=side*.08;
+    const forearm=new THREE.Group();forearm.name='forearm';forearm.position.set(0,-.36,0);arm.add(forearm);
+    mesh(new THREE.CylinderGeometry(.105,.075,.3,9),m.jacket,forearm,0,-.15,0);ellipsoid(forearm,m.skin,0,-.34,.02,.09,.11,.06);
+    for(let f=-1;f<=2;f++){const finger=mesh(new THREE.CylinderGeometry(.017,.013,.12,6),m.skin,forearm,f*.037-.015,-.46,.045);finger.rotation.x=-.25;}
+    const tear=piece(forearm,m.wound,0,-.15,.102,.09,.12,.014);tear.rotation.z=.25;limbs.push(arm);
+  }
+  for(const side of [-1,1]){
+    const leg=new THREE.Group();leg.position.set(side*.15,.88,0);group.add(leg);
+    mesh(new THREE.CylinderGeometry(.14,.115,.4,10),m.jeans,leg,0,-.2,0);
+    const shin=new THREE.Group();shin.name='shin';shin.position.set(0,-.4,0);leg.add(shin);
+    mesh(new THREE.CylinderGeometry(.115,.095,.34,10),m.jeans,shin,0,-.17,0);
+    const tear=ellipsoid(shin,m.wound,0,-.06,.11,.08,.11,.012);tear.rotation.z=.3;
+    piece(shin,m.pack,0,-.37,.05,.2,.13,.31);piece(shin,m.dark,0,-.435,.06,.21,.04,.32);limbs.push(leg);
+  }
   return {group,limbs};
 }
 
