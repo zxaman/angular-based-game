@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { outline, walls } from "./layout";
 
 // Repeatable canvas textures keep the world self-contained and avoid external assets.
 function texture(base: string, speckle: string, seed: number, repeat: [number, number]): THREE.CanvasTexture {
@@ -103,4 +104,31 @@ export function addCoastalArena(scene: THREE.Scene, obstacles: {x:number,z:numbe
   box(8,.08,.08,0x665c50,0,4.8,0);
   // hanging lanterns over the central plaza
   for(const x of [-3,-1,1,3]){box(.04,.7,.04,0x746656,x,4.4,0);const lantern=new THREE.Mesh(new THREE.SphereGeometry(.19,8,6),new THREE.MeshStandardMaterial({color:0xe6ac6c,emissive:0x8e4b26,emissiveIntensity:.35}));lantern.position.set(x,4,0);scene.add(lantern);}
+}
+
+/** A playable architectural blockout based on the supplied top-down plan and screenshots. */
+export function addReferenceArena(scene:THREE.Scene) {
+  const material=(color:number)=>new THREE.MeshStandardMaterial({color,roughness:.88});
+  const box=(w:number,h:number,d:number,c:number,x:number,y:number,z:number)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(c));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;};
+  const plane=(w:number,d:number,c:number,y:number)=>{let m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),material(c));m.rotation.x=-Math.PI/2;m.position.y=y;m.receiveShadow=true;scene.add(m);};
+  plane(120,120,0x3d9d9c,-.12);plane(53,74,0xc3b5a1,-.02);
+  // Paved tiles emphasize the courtyard and routes.
+  for(let x=-21;x<=21;x+=2)box(.018,.012,60,0xa99a85,x,.005,0);
+  for(let z=-30;z<=30;z+=2)box(42,.012,.018,0xa99a85,0,.006,z);
+  // The outline and interior blocks are also the single source of truth for collision and minimap.
+  for(let i=0;i<outline.length;i++){const a=outline[i],b=outline[(i+1)%outline.length];const x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,w=Math.abs(a[0]-b[0])+.18,d=Math.abs(a[1]-b[1])+.18;box(w,2.4,d,0x9a8c78,x,1.2,z);box(w+.08,.15,d+.08,0x6d5a48,x,2.45,z);}
+  walls.forEach((wall,index)=>{
+    const {x,z,w,d}=wall;const color=index%3===0?0x9c9c8c:index%3===1?0x9d7c62:0xa88d71;
+    box(w,3.7,d,color,x,1.85,z);box(w+.14,.17,d+.14,0x594938,x,.45,z);box(w+.2,.18,d+.2,0x5e4939,x,3.65,z);
+    // Layered pitched roofs with warm timber eaves.
+    const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*.57,1.3,4),material(index%2?0x765344:0x605852));roof.rotation.y=Math.PI/4;roof.scale.set(w/Math.max(w,d),1,d/Math.max(w,d));roof.position.set(x,4.4,z);roof.castShadow=true;scene.add(roof);
+    if(w>d){for(let px=x-w/2+.8;px<x+w/2;px+=1.3)box(.07,2.9,.08,0x70563f,px,2,z+d/2+.05);}else{for(let pz=z-d/2+.8;pz<z+d/2;pz+=1.3)box(.08,2.9,.07,0x70563f,x+w/2+.05,2,pz);}
+  });
+  // Fountain in the central courtyard.
+  const cyl=(r1:number,r2:number,h:number,c:number,y:number)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,20),material(c));m.position.set(0,y,0);m.castShadow=true;m.receiveShadow=true;scene.add(m);};
+  cyl(1.55,1.65,.22,0x5f8580,.13);cyl(1.05,1.1,.45,0x999a8b,.43);cyl(.7,.8,.38,0xb6ad9b,.84);
+  for(const [x,z] of [[-19,-22],[18,-14],[-18,7],[18,17],[-7,32]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.13,.25,5,8),material(0x806c50));trunk.position.set(x,2.5,z);scene.add(trunk);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;const leaf=new THREE.Mesh(new THREE.ConeGeometry(.4,2.5,5),material(i%2?0x4e7951:0x759461));leaf.position.set(x+Math.sin(a)*.9,5,z+Math.cos(a)*.9);leaf.rotation.set(Math.cos(a)*1.15,0,-Math.sin(a)*1.15);scene.add(leaf);}}
+  // Warm hanging lanterns and a bright overhead cable frame the middle.
+  for(const x of [-2,2]){box(.05,4,.05,0x624f3b,x,2,3);const lamp=new THREE.Mesh(new THREE.SphereGeometry(.19,8,6),new THREE.MeshStandardMaterial({color:0xffd398,emissive:0xa86d32,emissiveIntensity:.55}));lamp.position.set(x,3.5,3);scene.add(lamp);}
+  const cable=box(12,.035,.035,0xe0bf51,0,5,0);cable.rotation.y=.25;
 }

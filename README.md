@@ -23,7 +23,7 @@ Run `npm run build` for a production build.
 
 ## World and NPCs
 
-The current game is an original, bounded coastal-market arena inspired by the broad three-lane idea of VALORANT Drift; it is not an exact recreation of the map. Market stalls, buildings, docks and palm trees provide landmarks and cover. Infected are procedural stylized characters, with articulated walk cycles and basic obstacle steering. Cover blocks shots. You can steer in the air with WASD.
+The current game is a bounded coastal arena blockout based on the supplied Drift overhead reference. The perimeter and cover positions are approximate; the procedural architecture and textures are not the original game assets. Timber façades, rooflines, palm trees and a central fountain evoke the supplied screenshots. The live tactical minimap shows the same walls used by collision, the player’s facing direction and active infected. Infected are procedural stylized characters, with articulated walk cycles and grid-based navigation around walls. Cover blocks shots. You can steer in the air with WASD.
 
 You start with three lives and a shield; damage depletes the shield before health. When a life is lost, you redeploy with full health and shield and active enemies are cleared. Every five zombie kills fills your ult charge and pauses the game for a choice: increase weapon damage, increase and restore shield, or restore health and gain a life (up to three). Upgrades last until the run ends.
 
