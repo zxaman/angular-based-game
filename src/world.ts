@@ -45,11 +45,62 @@ export function makeZombie(): {group: THREE.Group; limbs: THREE.Group[]} {
   const head=mesh(new THREE.SphereGeometry(.25,10,8),skin,group,0,1.83,0);head.scale.set(.85,1.15,.86);
   mesh(new THREE.BoxGeometry(.35,.14,.34),dark,group,0,1.98,-.04);
   const eyes=new THREE.MeshStandardMaterial({color:0xa4432c,emissive:0x6b2010,emissiveIntensity:.7});for(const x of [-.095,.095])mesh(new THREE.SphereGeometry(.035,6,4),eyes,group,x,1.85,.205);
-  mesh(new THREE.BoxGeometry(.15,.035,.02),dark,group,0,1.71,.21);
+  // Facial volume, sunken eyes, exposed teeth and uneven skin marks.
+  const nose=mesh(new THREE.SphereGeometry(.065,8,6),skin,group,0,1.77,.22);nose.scale.set(.7,1.1,.8);
+  mesh(new THREE.BoxGeometry(.15,.045,.025),dark,group,0,1.69,.205);
+  const teeth=new THREE.MeshStandardMaterial({color:0xb9b3a0,roughness:1});
+  for(let i=-2;i<=2;i++) mesh(new THREE.BoxGeometry(.022,.025,.01),teeth,group,i*.026,1.695,.22);
+  const wound=new THREE.MeshStandardMaterial({color:0x68392f,roughness:1});
+  const gash=mesh(new THREE.BoxGeometry(.12,.025,.015),wound,group,-.1,1.91,.19);gash.rotation.z=.35;
+  const neck=mesh(new THREE.CylinderGeometry(.12,.15,.18,9),skin,group,0,1.56,0);neck.rotation.z=.08;
+  mesh(new THREE.BoxGeometry(.12,.18,.03),wound,group,-.09,1.36,.285);
+  mesh(new THREE.BoxGeometry(.08,.12,.03),skin,group,.12,1.07,.25);
+
   const limbs:THREE.Group[]=[];
-  for(const side of [-1,1]) {const arm=new THREE.Group();arm.position.set(side*.32,1.5,0);group.add(arm);mesh(new THREE.CylinderGeometry(.11,.09,.52,7),clothes,arm,0,-.26,0);mesh(new THREE.SphereGeometry(.1,7,6),skin,arm,0,-.55,0);limbs.push(arm);}
+  for(const side of [-1,1]) {const arm=new THREE.Group();arm.position.set(side*.32,1.5,0);group.add(arm);mesh(new THREE.CylinderGeometry(.11,.09,.52,7),clothes,arm,0,-.26,0);mesh(new THREE.SphereGeometry(.1,7,6),skin,arm,0,-.55,0);for(let f=-1;f<=1;f++)mesh(new THREE.CylinderGeometry(.018,.013,.13,5),skin,arm,f*.05,-.64,.04);limbs.push(arm);}
   for(const side of [-1,1]) {const leg=new THREE.Group();leg.position.set(side*.15,.88,0);group.add(leg);mesh(new THREE.CylinderGeometry(.13,.1,.72,7),pants,leg,0,-.36,0);mesh(new THREE.BoxGeometry(.23,.12,.32),dark,leg,0,-.72,.06);limbs.push(leg);}
   // Stains and torn clothing make each silhouette read as infected.
   mesh(new THREE.BoxGeometry(.14,.24,.015),new THREE.MeshStandardMaterial({color:0x57342c}),group,.09,1.25,.272);
   return {group,limbs};
+}
+
+/** Original coastal market arena, inspired by the broad three-lane concept, not a replica. */
+export function addCoastalArena(scene: THREE.Scene, obstacles: {x:number,z:number,r:number,height:number}[]) {
+  const box=(w:number,h:number,d:number,c:number,x:number,y:number,z:number)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:.9}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;};
+  const plane=(w:number,d:number,c:number,x:number,y:number,z:number)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshStandardMaterial({color:c,roughness:.92}));m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.receiveShadow=true;scene.add(m);};
+  // Three navigable lanes connected by open plazas, with a canal beyond the dock.
+  plane(56,84,0xb2a38a,0,.01,0);
+  for(const x of [-15,0,15]) {plane(9,80,x===0?0x9c927c:0xa99b84,x,.025,0);for(let z=-36;z<40;z+=4)box(8.8,.015,.035,0x807c6c,x,.04,z);}
+  for(const x of [-34,34]){plane(14,100,0x477d7c,x,.02,0);for(let z=-45;z<50;z+=5)box(12,.01,.04,0x8bada4,x,.035,z);}
+  // Small dockside buildings and stalls create cover while retaining routes between lanes.
+  for(const side of [-1,1])for(const z of [-28,-9,12,31]){
+    const x=side*23;const wall=[0xd6c1a2,0xb9aaa0,0xc4b5a0,0xd5ba95][Math.floor((z+28)/19)%4]||0xc5b39c;
+    box(6,3.5,5,wall,x,1.75,z);box(6.6,.25,5.6,0x806a59,x,3.6,z);box(1.8,1.7,.05,0x354b46,x,1.8,z-2.53);box(.06,1.8,1.7,0x354b46,x-side*3.03,1.8,z);
+    obstacles.push({x,z,r:3.5,height:Infinity});
+    // Awning facing the central lanes.
+    const awning=box(2.4,.13,4,0xc07457,x-side*4,2.7,z);awning.rotation.z=side*.12;
+    box(.1,2.5,.1,0x6d5844,x-side*5,1.25,z-1.8);box(.1,2.5,.1,0x6d5844,x-side*5,1.25,z+1.8);
+  }
+  // Central market stalls break sightlines without closing the three routes.
+  for(const [x,z] of [[-7,-21],[7,-10],[-7,9],[7,23]]) {
+    box(2.2,1.15,2.2,0x826a4d,x,.58,z);obstacles.push({x,z,r:1.25,height:Infinity});
+    for(const dx of [-1,1]) for(const dz of [-1,1])box(.09,2.5,.09,0x695842,x+dx,1.4,z+dz);
+    box(2.8,.13,2.8,z%2?0xc88067:0x758f82,x,2.7,z);
+    for(const dx of [-.55,0,.55]){const fruit=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshStandardMaterial({color:dx===0?0xdfa35d:0x77905a}));fruit.position.set(x+dx,1.32,z);scene.add(fruit);}
+  }
+  // Jumpable packing crates and substantial barriers, all represented in collision data.
+  for(const [x,z,h] of [[-13,-17,.7],[3,-23,.8],[14,-3,.65],[-2,12,.85],[13,27,.7],[-15,22,.65],[4,4,1.4]]){
+    box(1.3,h,1.3,0x826a4c,x,h/2,z);box(1.32,.035,.08,0x514635,x,h*.7,z+.66);obstacles.push({x,z,r:.9,height:h<=1.05?h:Infinity});
+  }
+  // Palm silhouettes, rope, and maritime props give the sector its own identity.
+  for(const [x,z] of [[-26,-35],[26,-20],[-26,4],[26,27]]){
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.17,.28,5,8),new THREE.MeshStandardMaterial({color:0x756249,roughness:1}));trunk.position.set(x,2.5,z);trunk.rotation.z=.08;trunk.castShadow=true;scene.add(trunk);
+    for(let i=0;i<7;i++){const leaf=new THREE.Mesh(new THREE.ConeGeometry(.45,3.2,5),new THREE.MeshStandardMaterial({color:i%2?0x527454:0x64805b,side:THREE.DoubleSide}));leaf.position.set(x+Math.sin(i*Math.PI*2/7)*1.1,5,z+Math.cos(i*Math.PI*2/7)*1.1);leaf.rotation.set(Math.cos(i*Math.PI*2/7)*1.1,0,-Math.sin(i*Math.PI*2/7)*1.1);scene.add(leaf);}
+  }
+  for(let z=-36;z<40;z+=8){box(.12,1.1,.12,0x605746,-27,.55,z);box(.12,1.1,.12,0x605746,27,.55,z);}
+  for(const x of [-27,27]){const rope=box(.06,.06,79,0xc6b597,x,.9,0);rope.castShadow=false;}
+  for(const x of [-4,4])box(.08,5,.08,0x665c50,x,2.5,0);
+  box(8,.08,.08,0x665c50,0,4.8,0);
+  // hanging lanterns over the central plaza
+  for(const x of [-3,-1,1,3]){box(.04,.7,.04,0x746656,x,4.4,0);const lantern=new THREE.Mesh(new THREE.SphereGeometry(.19,8,6),new THREE.MeshStandardMaterial({color:0xe6ac6c,emissive:0x8e4b26,emissiveIntensity:.35}));lantern.position.set(x,4,0);scene.add(lantern);}
 }
