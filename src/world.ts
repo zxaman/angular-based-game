@@ -131,9 +131,11 @@ export function addCoastalArena(scene: THREE.Scene, obstacles: {x:number,z:numbe
 
 /** A playable architectural blockout based on the supplied top-down plan and screenshots. */
 export function addReferenceArena(scene:THREE.Scene) {
-  const material=(color:number)=>new THREE.MeshStandardMaterial({color,roughness:.88});
+  const plaster=texture('#d0c9b8','#544b3a',93,[2,2]), stone=texture('#c3b5a1','#625f51',94,[16,20]);
+  const materials=new Map<number,THREE.MeshStandardMaterial>();
+  const material=(color:number)=>{let m=materials.get(color);if(!m){m=new THREE.MeshStandardMaterial({color,roughness:.88,map:[0x9c9c8c,0x9d7c62,0xa88d71,0x9a8c78].includes(color)?plaster:null});materials.set(color,m);}return m;};
   const box=(w:number,h:number,d:number,c:number,x:number,y:number,z:number)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(c));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;};
-  const plane=(w:number,d:number,c:number,y:number)=>{let m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),material(c));m.rotation.x=-Math.PI/2;m.position.y=y;m.receiveShadow=true;scene.add(m);};
+  const plane=(w:number,d:number,c:number,y:number)=>{let m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),c===0xc3b5a1?new THREE.MeshStandardMaterial({map:stone,roughness:1}):material(c));m.rotation.x=-Math.PI/2;m.position.y=y;m.receiveShadow=true;scene.add(m);};
   plane(120,120,0x3d9d9c,-.12);plane(53,74,0xc3b5a1,-.02);
   // Paved tiles emphasize the courtyard and routes.
   for(let x=-21;x<=21;x+=2)box(.018,.012,60,0xa99a85,x,.005,0);
